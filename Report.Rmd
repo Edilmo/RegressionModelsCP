@@ -1,0 +1,138 @@
+---
+title: 'Automatic vs Manual Transmission: miles per gallon criteria'
+output: word_document
+---
+  
+## Summary  
+The main porpuse of this report is give a answer to the question: “Is an automatic or manual transmission better for MPG”. The conclussion is that Automatic transmission is better than Manual Transmission, and this characteristic is more clear in the 8 cylinders cars. One interesting detail is that this charcteristic does not hold if we just consider similar cars that differs only in displacement and transmission. In order to support this conclussion, the MPG difference between automatic and manual transmissions were quantified with the coeficients of a simple regression model.  
+
+## Exploratory Data Analyses  
+The first step is look at the data plotting each variable against the order. This plot can be found at the begining of the appendix. From the plots we can see:  
+1. Displacement and Weight have almost the same correlation with MPG (−0.848 and −0.868). And actually they have a strong positive correlation between each other (0.888).  
+2. QSec and Drat have a very strong positive correlation between each other 0.0912.  
+3. V/S and AM transmission have almost the same efect in the MPG, except for a outlier in the V/S case.
+4. Gear seems to have no to much effect in the MPG.  
+5. When the amount of Cyl increase, the MPG decrease clearly.  
+6. When the amount of carburetors increase, the MPG decrease clearly.  
+7. When the transmission is automatic there is a clear effect of disminution of MPG.  
+8. In the data we have a big proportion of high cylenders automatyc cars and a big proportion of low cylenders manual cars.  
+9. In the data we have sparse values of displacement for automatyc cars and a concentration of low displacement for manual cars.  
+
+From the results above, it is possible to try some regresion models:  
+- All variables.  
+- All variables minus the WT variable.  
+- All variables minus the VS variable.  
+- All variables minus the QSEC variable.  
+- All variables minus the GEAR variable.  
+- All variables minus the WT,VS,QSEC,GEAR variable.  
+ + A simple first order polynomial approximation.  
+ + A high order polynomial approximation (HOLM).  
+For those linear models we can plot the residuals. Those plots can be found at the second section of the apprendix. There you are going to see residuals plots and the diagnostics plots for our HOLM. From that plots we can say that our high order polynomial approach have a good behaviour from a residual point of view because almost all of the residual points are 0 and the imfluence of the outliers is not so significant.  
+
+With the above results in mind, let's now take a look over the coeficients of our high order polynomial lineal model, specifically those coeficients that interacts with AM.  
+  
+  Coef  |    Estimate  | Std. Error |  t value  | Pr(>|t|)
+------- | ------------ | ---------- | --------- | ----------
+amM     | -1753.245361 | 448.359240 | -3.910358 | 0.01738857
+cyl8:amM| -1763.261929 | 455.789835 | -3.868585 | 0.01801514
+disp:amM|    10.837153 | 2.989712   | 3.624816  | 0.02226192
+hp:amM  |     4.259352 | 2.029748   | 2.098464  | 0.10383323
+
+From these coeficients we can say:  
+1. The impact that the Transmission has over 8 cylinder cars is clearly a disminussion of MPG for automatic cars. We conclude this after compare our intercept with "cyl8:amM" coefficient wich also has a t value not crossing 0 with P value less than 0.05.  
+2. The impact that the Transmission has is clearly a disminussion of MPG for automatic cars. We conclude this after compare our intercept with "amM" coefficient wich also has a t value not crossing 0 with P value less than 0.05.  
+3. The impact that the Transmission has over displacement is completly different, it is a increase of MPG for Manual cars. We conclude this after compare our intercept with "cyl8:amM" coefficient wich also has a t value not crossing 0 with P value less than 0.05.  
+
+## Conclussion  
+We can say that the conclussion of our coeficients have a clear difference with a first intuition at the data since the data at first glance seems to say that Automatic cars have less MPG. 
+The explanation to this, it is the bias of the data. We have more 8 cylenders cars with automatic transmission and more 4 cylenders cars with manual transmission.  
+
+## Appendix  
+
+### Pair Plots  
+```{r, echo = FALSE, error = FALSE, eval=TRUE, warning=FALSE, fig.width=10, fig.height=10}
+# Load the Libraries and the Data sets
+require(datasets)
+require(GGally)
+require(ggplot2)
+# Load the data
+data(mtcars)
+mtcarsM <- mtcars
+# Factor some variables
+mtcarsM$carb <- factor(mtcarsM$carb)
+mtcarsM$gear <- factor(mtcarsM$gear)
+mtcarsM$am <- factor(mtcarsM$am, c(0,1), labels = c("A","M"))
+mtcarsM$vs <- factor(mtcarsM$vs)
+mtcarsM$cyl <- factor(mtcarsM$cyl)
+# Normalize some variables
+#mtcarsM$disp <- ( (mtcarsM$disp - mean(mtcarsM$disp)) / sd(mtcarsM$disp) )
+#mtcarsM$hp <- ( (mtcarsM$hp - mean(mtcarsM$hp)) / sd(mtcarsM$hp) )
+#mtcarsM$drat <- ( (mtcarsM$drat - mean(mtcarsM$drat)) / sd(mtcarsM$drat) )
+#mtcarsM$wt <- ( (mtcarsM$wt - mean(mtcarsM$wt)) / sd(mtcarsM$wt) )
+#mtcarsM$qsec <- ( (mtcarsM$qsec - mean(mtcarsM$qsec)) / sd(mtcarsM$qsec) )
+# Lest plots the pairs relation
+g.pairs = ggpairs(mtcarsM[,c(1,3:7)], lower = list(continuous = "smooth"),params = c(method = "loess"))
+g.pairs
+g.pairs = ggpairs(mtcarsM[,c(1,2,8:11)], lower = list(continuous = "smooth"),params = c(method = "loess"))
+g.pairs
+```
+
+### Linear models  
+
+#### Residuals  
+```{r, echo = FALSE, error = FALSE, eval=TRUE, warning=FALSE, fig.width=10, fig.height=10}
+fit <- lm(mpg ~ cyl + disp + hp + drat + wt + qsec + vs + am + gear + carb, mtcarsM)
+res <- resid(fit)
+coef <- coef(fit)
+fitW <- lm(mpg ~ cyl + disp + hp + drat + qsec + vs + am + gear + carb, mtcarsM)
+resW <- resid(fitW)
+coefW <- coef(fitW)
+fitV <- lm(mpg ~ cyl + disp + hp + drat + wt + qsec + am + gear + carb, mtcarsM)
+resV <- resid(fitV)
+coefV <- coef(fitV)
+fitQ <- lm(mpg ~ cyl + disp + hp + drat + wt + vs + am + gear + carb, mtcarsM)
+resQ <- resid(fitQ)
+coefQ <- coef(fitQ)
+fitG <- lm(mpg ~ cyl + disp + hp + drat + wt + qsec + vs + am + carb, mtcarsM)
+resG <- resid(fitG)
+coefG <- coef(fitG)
+fitWVQG <- lm(mpg ~ cyl + disp + hp + drat + am + carb, mtcarsM)
+resWVQG <- resid(fitWVQG)
+coefWVQG <- coef(fitWVQG)
+fitWVQGi <- lm(mpg ~ cyl * disp * hp * drat * am * carb, mtcarsM)
+resWVQGi <- resid(fitWVQGi)
+coefWVQGi <- coef(fitWVQGi)
+
+e = c(res,resW, resV, resQ, resG)
+modFit = factor(c(rep("All", nrow(mtcarsM)),
+               rep("No wt", nrow(mtcarsM)),
+               rep("No vs", nrow(mtcarsM)),
+               rep("No qsec", nrow(mtcarsM)),
+               rep("No gear", nrow(mtcarsM))))
+g.res = ggplot(data.frame(e = e, f = modFit), aes(y = e, x = f, fill = f))
+g.res = g.res + geom_dotplot(binaxis = "y", size = 2, stackdir = "center")
+g.res = g.res + xlab("Fitting approach")
+g.res = g.res + ylab("Residual MPG")
+g.res
+e = c(res,resWVQG, resWVQGi)
+modFit = factor(c(rep("All", nrow(mtcarsM)),
+               rep("No wt,vs,qsec,gear +", nrow(mtcarsM)),
+               rep("No wt,vs,qsec,gear *", nrow(mtcarsM))))
+g.res = ggplot(data.frame(e = e, f = modFit), aes(y = e, x = f, fill = f))
+g.res = g.res + geom_dotplot(binaxis = "y", size = 2, stackdir = "center")
+g.res = g.res + xlab("Fitting approach")
+g.res = g.res + ylab("Residual MPG")
+g.res
+```
+
+#### Diagnostics  
+```{r, echo = FALSE, error = FALSE, eval=TRUE, warning=FALSE}
+plot(fitWVQGi)
+```
+
+### Coeficients of HOLM  
+```{r, echo = FALSE}
+coefficients <- summary(fitWVQGi)$coefficients
+coefficients[which(grepl("am",row.names(coefficients))),]
+```
+
